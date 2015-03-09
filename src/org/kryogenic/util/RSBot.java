@@ -20,7 +20,7 @@ public class RSBot {
         return t[Random.nextInt(0, t.length)];
     }
 
-    // Interesting variant of method overriding.
+    // Interesting variant of method overloading.
     // Does not explicitly specify which type of parameters it takes,
     // does not handle wrong parameters very well,
     // and is presumably faster
