@@ -1,0 +1,13 @@
+package org.kryogenic.struct;
+
+import com.rsbuddy.script.ActiveScript;
+
+/**
+ * @author kryo
+ * @version 1.0
+ * @date 03/09/11
+ */
+public abstract class kScript extends ActiveScript {
+
+    public abstract void updatePaint(kPaint paint);
+}

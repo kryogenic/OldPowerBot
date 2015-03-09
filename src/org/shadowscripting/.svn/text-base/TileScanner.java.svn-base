@@ -1,0 +1,40 @@
+package org.shadowscripting;
+
+import com.rsbuddy.event.listeners.PaintListener;
+import com.rsbuddy.script.ActiveScript;
+import com.rsbuddy.script.Manifest;
+import com.rsbuddy.script.methods.Mouse;
+import com.rsbuddy.script.methods.Players;
+import com.rsbuddy.script.wrappers.Area;
+import com.rsbuddy.script.wrappers.Tile;
+
+import java.awt.*;
+
+/**
+ * @author kryo
+ * @version 1.0
+ * @date 03/10/11
+ */
+@Manifest(name = "Tile Scanner", description = "Scans for and paints tiles", authors = {"kryo"})
+public class TileScanner extends ActiveScript implements PaintListener {
+
+    @Override
+    public int loop() {
+        return 1000;
+    }
+
+    @Override
+    public void onRepaint(Graphics g) {
+        Tile p = Players.getLocal().getLocation();
+        for (Tile t : new Area(p.getX() - 5, p.getY() - 5, p.getX() + 5, p.getY() + 5).getTileArray()) {
+            t.draw(g);
+            Point tp = t.getCenterPoint();
+            Point mp = Mouse.getLocation();
+            if ((tp.x - mp.x > 5 || tp.x - mp.x < 5) &&
+                    (tp.y - mp.y > 5 || tp.y - mp.y < 5)) {
+                g.setColor(Color.WHITE);
+                g.drawString(t.toString(), t.getCenterPoint().x, t.getCenterPoint().y);
+            }
+        }
+    }
+}

@@ -1,0 +1,27 @@
+package org.shadowscripting.util;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Utility class for manipulating lists and arrays
+ * @author kryo
+ * @version 1.0
+ */
+public class Lists {
+
+    /**
+     * Converts a list of int primitives to an ArrayList of Integer objects
+     *
+     * @param array the array to convert
+     * @return the converted list
+     */
+    // TODO: Finish the rest of the primitives
+    public static List<Integer> toObjectList(int[] array) {
+        List<Integer> list = new ArrayList<Integer>(array.length);
+        for (int element : array) {
+            list.add(element);
+        }
+        return list;
+    }
+}

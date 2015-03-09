@@ -1,0 +1,143 @@
+package org.shadowscripting.util;
+
+
+import java.util.List;
+import java.util.ArrayList;
+import org.rsbuddy.tabs.Inventory;
+import org.shadowscripting.util.net.GeItem;
+import com.rsbuddy.script.task.LoopTask;
+import com.rsbuddy.script.wrappers.Item;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+public class ProfitMonitor extends LoopTask {
+	private List<GeItem> indexedSearches = new ArrayList<GeItem>();
+	private List<GeItem> indexedNotedSearches = new ArrayList<GeItem>();
+	private Item[] prevInvCache, updateInvCache;
+	private int profit;
+	private Logger logger = Logger.getLogger("Logger");
+	private boolean paused;
+
+	public boolean onStart() {
+		prevInvCache = Inventory.getAllItems();
+		updateInvCache = prevInvCache;
+		paused = false;
+		
+		return true;
+	}
+
+	public int loop() {
+		if(!paused) {
+			updateInvCache = Inventory.getAllItems();       //updateInv = Inventory.getCachedItems(); will not open the inventory tab but is not as accurate
+			profit = checkForProfitChange(profit, prevInvCache, updateInvCache);
+			prevInvCache = updateInvCache;
+		}
+
+		return 2000;
+	}		
+
+	private int checkForProfitChange (int startProfit, Item[] prevInv, Item[] updateInv) {
+		/*if (Bank.isOpen() || DepositBox.isOpen())
+			return startProfit;    */
+			
+		int endProfit = startProfit;
+		GeItem geItem1 = new GeItem("", -1, -1);
+		GeItem geItem2 = new GeItem("", -1, -1);
+
+		for(int i=0; i<28; i++) {
+			try {
+				if (prevInv[i] != null && prevInv[i].getId() >= 0) {
+					if (updateInv[i] != null && updateInv[i].getId() >= 0) {
+						if (prevInv[i].getId() != updateInv[i].getId() || prevInv[i].getStackSize() != updateInv[i].getStackSize()) {
+							if (prevInv[i].getId() == updateInv[i].getId()) {
+								//logger.log(Level.INFO, "Inventory index: " + i + " : has changed stack size.");
+								geItem1 = indexedSearch(updateInv[i].getId(), updateInv[i].getName());
+								endProfit += (updateInv[i].getStackSize() - prevInv[i].getStackSize()) * geItem1.getGuidePrice();
+							} else {
+								//logger.log(Level.INFO, "Inventory index: " + i + " : has changed items.");
+								geItem1 = indexedSearch(updateInv[i].getId(), updateInv[i].getName());
+								geItem2 = indexedSearch(prevInv[i].getId(), prevInv[i].getName());
+								endProfit += (updateInv[i].getStackSize() * (geItem1.getGuidePrice())) - (prevInv[i].getStackSize() * (geItem2.getGuidePrice()));
+							}
+						}
+					} else {
+						//logger.log(Level.INFO, "Inventory index: " + i + " : has disappeared.");
+						geItem2 = indexedSearch(prevInv[i].getId(), prevInv[i].getName());
+						endProfit -= prevInv[i].getStackSize() * (geItem2.getGuidePrice());
+					}
+				} else if (updateInv[i] != null && updateInv[i].getId() >= 0) {
+					//logger.log(Level.INFO, "Inventory index: " + i + " : has gained an item.");
+					geItem1 = indexedSearch(updateInv[i].getId(), updateInv[i].getName());
+					endProfit += updateInv[i].getStackSize() * (geItem1.getGuidePrice());
+				}
+			} catch (Exception e) {
+				//Item does not have a price or error while looking up item
+				logger.log(Level.SEVERE, "ERROR");
+				logger.log(Level.WARNING, "Update GeSearch " + (geItem1 == null ? "returned a null GeItem." : "returned properly."));
+				logger.log(Level.WARNING, "Previous GeSearch " + (geItem2 == null ? "returned a null GeItem." : "returned properly."));
+				System.out.println(e);
+				e.printStackTrace();
+				stop();
+			}
+		}
+
+		return endProfit;
+	}
+
+	private GeItem indexedSearch(int id, String name) {
+		name = formatItemName(name);
+
+		if (id == 995) {
+			return new GeItem("Coins", 995, 1);
+		}
+
+		for (int i=0; i<(indexedSearches.size()); i++) {
+			if (id == ((GeItem)indexedSearches.get(i)).getId()) {
+				//logger.log(Level.INFO, "Found Item " + ((GeItem)indexedSearches.get(i)).getName() + " in regular search list.");
+				return ((GeItem)indexedSearches.get(i));
+			}
+		}
+
+		for (int i=0; i<(indexedNotedSearches.size()); i++) {
+			if (((GeItem)indexedNotedSearches.get(i)).getName().equalsIgnoreCase(name)) {
+				//logger.log(Level.INFO, "Found Item " + ((GeItem)indexedNotedSearches.get(i)).getName() + " in noted search list.");
+				return ((GeItem)indexedNotedSearches.get(i));
+			}
+		}
+
+		GeItem lookup = GeItem.lookup(id);
+		if (lookup != null && lookup.getId() != -1 && lookup.getName() != null && lookup.getGuidePrice() != 0) {
+			//logger.log(Level.INFO, "Adding " + name + " to regular search list.");
+			indexedSearches.add(lookup);
+		} else {
+			lookup = GeItem.lookup(name);
+			if (lookup != null) {
+				//logger.log(Level.INFO, "Adding " + name + " to noted search list.");
+				indexedNotedSearches.add(lookup);
+			} else {
+				//logger.log(Level.SEVERE, "COULD NOT FIND ITEM: [" + name + "]");
+				//logger.log(Level.SEVERE, "ADDING WITH PRICE 0");
+				lookup = new GeItem(name, id, 0);
+				indexedSearches.add(lookup);
+			}
+		}
+
+		return lookup;
+	}
+
+	private String formatItemName(String name) {
+		return name.substring(name.indexOf('>')+1);
+	}
+	
+	public int getProfit() {
+		return profit;
+	}
+
+	public void pause() {
+		paused = true;
+	}
+
+	public void resume() {
+		paused = false;
+	}
+}
